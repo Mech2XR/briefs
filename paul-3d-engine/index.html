@@ -257,7 +257,7 @@ const SECTIONS = [
 const DRAFT_KEY = "paul-3d-vision-draft";
 let answers = {}, updatedAt = null, finished = false;
 
-function loadDraft() { try { const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); if (d && d.answers) { answers = d.answers; updatedAt = d.updatedAt || null; finished = !!d.finished; return true; } } catch (e) {} return false; }
+function loadDraft() { try { const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); if (d && d.answers) { answers = d.answers; updatedAt = d.updatedAt || null; finished = !!d.finished; return Object.keys(answers).length > 0; } } catch (e) {} return false; }
 function saveDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ answers, updatedAt, finished })); return true; } catch (e) { return false; } }
 
 const total = SECTIONS.reduce((n, s) => n + s.qs.length, 0);
@@ -423,7 +423,7 @@ document.getElementById("file-load").addEventListener("change", async (ev) => {
 });
 
 if (loadDraft()) stateText("Your earlier answers are back", "ok");
-else if (!saveDraft()) { localOk = false; }
+try { localStorage.setItem(DRAFT_KEY + "-probe", "1"); localStorage.removeItem(DRAFT_KEY + "-probe"); } catch (e) { localOk = false; }
 render();
 </script>
 </body>
