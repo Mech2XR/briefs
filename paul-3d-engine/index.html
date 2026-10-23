@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>3D Engine Vision Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one drawing sheet per section, a title block on top, a sticky progress rail; single column, 760px max. */
+:root {
+  --paper: #f2f4f1;
+  --sheet: #fbfcfa;
+  --ink: #1a1f22;
+  --muted: #59625f;
+  --line: #cfd6d2;
+  --accent: #0b6f78;
+  --accent-soft: #dcefee;
+  --x: #c2413a; --y: #3d8a3a; --z: #2f5fb8;
+  --warn: #9a5b00;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111416; --sheet: #171b1e; --ink: #e6ebe8; --muted: #9aa5a1; --line: #2c3438;
+    --accent: #4fc0c7; --accent-soft: #163236; --x: #e0675f; --y: #6cbf67; --z: #6f96e8; --warn: #e2a24a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111416; --sheet: #171b1e; --ink: #e6ebe8; --muted: #9aa5a1; --line: #2c3438;
+  --accent: #4fc0c7; --accent-soft: #163236; --x: #e0675f; --y: #6cbf67; --z: #6f96e8; --warn: #e2a24a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 64px;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+.wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 22px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: 0.01em; }
+h1 { font-size: 2.4rem; }
+h2 { font-size: 1.6rem; }
+.mono { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+p { margin: 0; max-width: 65ch; }
+
+/* Sticky progress rail */
+.rail {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--paper); padding-block: 10px; border-bottom: 1px solid var(--line);
+  display: grid; gap: 6px;
+}
+.rail-row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.bar { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+.save-state { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); }
+.save-state.ok { color: var(--accent); }
+.save-state.warn { color: var(--warn); }
+
+/* Title block, as on a drawing sheet */
+.titleblock { background: var(--sheet); border: 1.5px solid var(--ink); display: grid; grid-template-columns: 1fr; }
+.tb-head { padding: 18px 18px 14px; display: grid; gap: 10px; border-bottom: 1.5px solid var(--ink); }
+.tb-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.tb-cell { padding: 8px 12px; border-right: 1px solid var(--line); min-width: 0; }
+.tb-cell:last-child { border-right: 0; }
+.tb-cell b { display: block; font-family: var(--font-body); font-weight: 500; font-size: 0.9rem; overflow-wrap: anywhere; }
+.axes { display: inline-flex; gap: 6px; align-items: center; }
+.axes i { width: 18px; height: 3px; display: inline-block; }
+.axes i:nth-child(1) { background: var(--x); } .axes i:nth-child(2) { background: var(--y); } .axes i:nth-child(3) { background: var(--z); }
+.intro { display: grid; gap: 10px; padding: 16px 18px; }
+
+/* Sheets */
+.sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 4px; display: grid; }
+.sheet-head { padding: 14px 18px; border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.q { padding: 16px 18px; border-bottom: 1px dashed var(--line); display: grid; gap: 10px; }
+.q:last-child { border-bottom: 0; }
+.q-label { display: flex; gap: 10px; align-items: baseline; }
+.q-num { font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent); flex: none; padding-top: 2px; }
+.q-text { font-weight: 600; min-width: 0; }
+.q-hint { color: var(--muted); font-size: 0.88rem; margin-left: 36px; }
+.opts { display: grid; gap: 6px; margin-left: 36px; }
+.opt { display: flex; gap: 10px; align-items: flex-start; padding: 7px 10px; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; background: transparent; }
+.opt:hover { border-color: var(--accent); }
+.opt input { margin-top: 4px; accent-color: var(--accent); flex: none; }
+.opt span { min-width: 0; }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+textarea, input[type="text"] {
+  width: 100%; font: inherit; color: var(--ink); background: var(--paper);
+  border: 1px solid var(--line); border-radius: 4px; padding: 9px 10px; resize: vertical;
+}
+.field { margin-left: 36px; }
+textarea:focus, input[type="text"]:focus, .opt:focus-within, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.other-label { font-size: 0.82rem; color: var(--muted); margin: 2px 0 4px; display: block; }
+
+/* Finish panel */
+.finish { background: var(--sheet); border: 1.5px solid var(--ink); padding: 18px; display: grid; gap: 14px; }
+.btns { display: flex; flex-wrap: wrap; gap: 10px; }
+button { font: inherit; font-weight: 600; border-radius: 4px; padding: 10px 16px; cursor: pointer; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); }
+button.primary { background: var(--ink); color: var(--sheet); }
+button:disabled { opacity: .5; cursor: default; }
+.note { font-size: 0.88rem; color: var(--muted); }
+.status { font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); min-height: 1.2em; }
+#copybox { width: 100%; min-height: 160px; font-family: var(--font-mono); font-size: 0.78rem; }
+
+@media (max-width: 560px) {
+  h1 { font-size: 2rem; }
+  .tb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tb-cell:nth-child(2) { border-right: 0; }
+  .tb-cell:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  .opts, .field, .q-hint { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="rail" aria-live="polite">
+    <div class="rail-row">
+      <span class="mono" id="progress-text">0 of 0 answered</span>
+      <span class="save-state" id="save-state">Your answers save as you go</span>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+  </div>
+
+  <header class="titleblock">
+    <div class="tb-head">
+      <span class="mono">Vision brief <span class="axes" aria-hidden="true"><i></i><i></i><i></i></span></span>
+      <h1>The 3D engine: idea and image in, model and video out</h1>
+    </div>
+    <div class="tb-grid">
+      <div class="tb-cell"><span class="mono">For</span><b>Paul</b></div>
+      <div class="tb-cell"><span class="mono">Drawn by</span><b>Mech</b></div>
+      <div class="tb-cell"><span class="mono">Rev</span><b>A, first pass</b></div>
+      <div class="tb-cell"><span class="mono">Sheets</span><b id="sheet-count">12</b></div>
+    </div>
+    <div class="intro">
+      <p>Hi Paul. I'm Mech, the AI Ilan runs his work through, a younger sibling of your Phantom. He told me about the tool you want to build: you give it an idea or a few images, and it gives back a strong 3D model and a finished video for a website, from zero to at least 95% without a giant prompt, including working mechanical models.</p>
+      <p>This brief captures your vision so the two of you can design the process that gets there every time. Most questions are picks, and every one has room for your own words. Skip anything you haven't decided; "not sure yet" is a useful answer.</p>
+      <p class="note">Your answers save as you type, for Ilan and in this browser, so you can close the page and come back to it on the same device. The bar at the top says when they were last saved. After you, Ilan adds what he knows about modeling, much of it from Fusion 360, and I combine the two into one plan.</p>
+    </div>
+  </header>
+
+  <main id="sheets" class="wrap" style="gap:22px;width:100%"></main>
+
+  <section class="finish" aria-labelledby="finish-h">
+    <span class="mono">Sheet 13 · Finish</span>
+    <h2 id="finish-h">Send it back</h2>
+    <p id="finish-text">Your answers have been saving for Ilan as you went. When you're done, press I'm finished so he knows. Download a copy keeps a file for yourself, and it is also the way to send them if the bar at the top says they did not save.</p>
+    <div class="btns">
+      <button class="primary" id="btn-finish" type="button">I'm finished</button>
+      <button id="btn-download" type="button">Download a copy</button>
+      <button id="btn-copy" type="button">Copy my answers</button>
+      <label class="note" for="file-load" style="align-self:center;cursor:pointer;text-decoration:underline">Load answers from a saved file</label>
+      <input id="file-load" type="file" accept=".json,application/json" hidden>
+    </div>
+    <div class="status" id="finish-status" role="status"></div>
+    <textarea id="copybox" readonly hidden aria-label="Your answers as text"></textarea>
+  </section>
+</div>
+
+<script>
+const SECTIONS = [
+  { title: "The tool in one breath", lead: "What it is, who it serves, and what a win looks like.", qs: [
+    { id: "q1", t: "In a sentence or two, what does the tool do?", type: "text", hint: "Say it the way you'd pitch it to a client." },
+    { id: "q2", t: "Who will use it?", type: "multi", opts: ["Only me", "My agency team", "Clients, on their own", "Other agencies or freelancers", "The public, as a product"] },
+    { id: "q3", t: "What will the videos be used for?", type: "multi", opts: ["Hero section loop behind a headline", "Product showcase or turntable", "Explainer of how something works", "Scroll-driven section that plays as you scroll", "Social clips and ads", "Client pitches and proposals"] },
+    { id: "q4", t: "If you could only nail one thing first, which is it?", type: "single", opts: ["The look: it has to impress", "Speed from idea to video", "Mechanical correctness", "Low cost per video, at volume"] },
+    { id: "q5", t: "Point me to two or three videos, sites or products and say \"like this\".", type: "text", hint: "Links or names. What exactly do you like in each?" },
+    { id: "q6", t: "What does \"95% done\" mean to you? What is the last 5% a person still does?", type: "text" }
+  ]},
+  { title: "What goes in", lead: "The raw material the engine starts from.", qs: [
+    { id: "q7", t: "What will people give the tool?", type: "multi", opts: ["A typed idea", "A photo of a real object", "Sketches or hand drawings", "Reference images found online", "A client's own product photos", "Existing 3D files (STL, OBJ, GLB, STEP)", "Dimensions or a spec sheet", "A brand guide: colors, logo, fonts"] },
+    { id: "q8", t: "Typically, how many images come with one model?", type: "single", opts: ["None, text only", "One image", "Two to four angles", "Many, like a full photo set"] },
+    { id: "q9", t: "How close must the model be to the source images?", type: "single", opts: ["Inspired by it", "Recognizably the same object", "Dimensionally accurate"] },
+    { id: "q10", t: "\"Without a massive prompt\": what is the most a user should have to type?", type: "text", hint: "For example: one line, a short form, a few picks." },
+    { id: "q11", t: "Should the tool ask questions before it models?", type: "single", opts: ["Never, it just goes", "Only when it isn't sure", "Always a short checklist first"] }
+  ]},
+  { title: "What gets modeled", lead: "The kinds of objects and how real they need to be.", qs: [
+    { id: "q12", t: "What will be modeled most?", type: "multi", opts: ["Products and hard-surface objects", "Mechanical assemblies with moving parts", "Architecture and interiors", "Characters or organic shapes", "Logos, type and abstract forms", "Vehicles", "Packaging"] },
+    { id: "q13", t: "Visual models or real engineering solids?", type: "single", opts: ["Visual meshes are fine: it only has to look right", "Real solids with true dimensions", "Depends on the job"] },
+    { id: "q14", t: "What does \"functional mechanical\" mean to you?", type: "multi", opts: ["Parts move on real joints (hinges, sliders, axles)", "Gears mesh with correct ratios and speeds", "Exploded views that come apart and go back together", "It can be 3D printed", "Real tolerances and clearances", "It exports to CAD as STEP"] },
+    { id: "q15", t: "How detailed should the look be?", type: "single", opts: ["Stylized and simple", "Realistic", "Photoreal, like a product shoot"] },
+    { id: "q16", t: "Name one mechanism you'd love it to get right first.", type: "text", hint: "A gearbox, a folding hinge, a pump, a watch movement, a door latch..." }
+  ]},
+  { title: "Templates: the zero to 95% part", lead: "The reusable recipes that do most of the work.", qs: [
+    { id: "q17", t: "What is a \"template\" to you?", type: "multi", opts: ["A camera, light and motion recipe that fits any model", "A parametric part family (gear, bottle, box, enclosure)", "A full scene preset per industry", "A workflow: the steps and checks, in order"] },
+    { id: "q18", t: "Which video templates should exist?", type: "multi", opts: ["360 turntable", "Exploded view", "Assembly build-up, part by part", "Cutaway or cross-section", "Feature callouts with labels", "Scroll-scrub sequence", "Hero reveal or product drop", "Seamless background loop"] },
+    { id: "q19", t: "How much can a user change inside a template?", type: "single", opts: ["Pick it and go", "A few sliders and options", "Full control of every setting"] },
+    { id: "q20", t: "Which three templates should work first?", type: "text" }
+  ]},
+  { title: "Motion and animation", lead: "How things move on screen.", qs: [
+    { id: "q21", t: "What kinds of motion?", type: "multi", opts: ["Camera moves: orbit, dolly, push-in", "The object rotating", "Parts assembling or exploding", "Mechanisms running (gears turning, pistons pumping)", "Morphs and transformations", "Particles and abstract effects"] },
+    { id: "q22", t: "How should motion be driven?", type: "single", opts: ["Keyframed, no physics", "Light physics for drops and collisions", "Mechanical constraints drive it, like a real machine"] },
+    { id: "q23", t: "Typical video length?", type: "single", opts: ["3 to 6 seconds, looping", "8 to 15 seconds", "15 to 60 seconds", "Varies with scroll length"] },
+    { id: "q24", t: "Who directs the camera?", type: "single", opts: ["The tool chooses automatically", "Pick from presets", "A storyboard for every shot"] }
+  ]},
+  { title: "The look: materials, light, brand", lead: "What makes it look expensive.", qs: [
+    { id: "q25", t: "Which materials matter most?", type: "multi", opts: ["Metals: brushed, polished, anodized", "Plastics and rubber", "Glass and clear parts", "Wood", "Fabric and soft goods", "Glowing or emissive parts", "Exact brand colors"] },
+    { id: "q26", t: "Lighting style?", type: "single", opts: ["Clean studio product light", "Dramatic and dark", "Natural daylight or an environment", "Set per brand"] },
+    { id: "q27", t: "Background?", type: "single", opts: ["Transparent, to place over a site", "A solid brand color", "A full environment or scene", "Depends on the template"] },
+    { id: "q28", t: "Any brand rules the tool must respect?", type: "text", hint: "Colors, logo use, fonts, things never to show." }
+  ]},
+  { title: "Rendering and output", lead: "What comes out the other end.", qs: [
+    { id: "q29", t: "Which outputs do you need?", type: "multi", opts: ["MP4 video", "WebM with a transparent background", "PNG image sequence", "GIF", "GLB or glTF for live 3D on a site", "USDZ for phone AR", "STL or STEP files"] },
+    { id: "q30", t: "Resolution and frame rate?", type: "single", opts: ["1080p at 30 fps", "1080p at 60 fps", "4K", "Several, including vertical 9:16"] },
+    { id: "q31", t: "Quality against speed?", type: "single", opts: ["Fast previews, final renders can take longer", "Real-time engine, near instant", "Path-traced photoreal, whatever it takes"] },
+    { id: "q32", t: "Where does rendering happen?", type: "single", opts: ["On my own machine", "Cloud rendering when needed", "A mix: previews local, finals in the cloud", "Not sure yet"] },
+    { id: "q33", t: "What hardware do you have?", type: "text", hint: "Computer, graphics card, any render setup." }
+  ]},
+  { title: "Getting it onto websites", lead: "The last mile, where the video earns its keep.", qs: [
+    { id: "q34", t: "How will the result sit on a site?", type: "multi", opts: ["Background video", "Scroll-scrubbed frames", "Live 3D viewer, with a video fallback", "A plain embedded player"] },
+    { id: "q35", t: "File size target per video?", type: "single", opts: ["Under 2 MB", "2 to 8 MB", "Quality first, size second"] },
+    { id: "q36", t: "Which site platforms?", type: "multi", opts: ["Custom code", "Webflow or Framer", "WordPress", "Wix or Shopify"] },
+    { id: "q37", t: "Should the tool hand over ready-to-paste embed code?", type: "single", opts: ["Yes, every time", "Only for the live 3D viewer", "No, the file is enough"] }
+  ]},
+  { title: "Workflow and review", lead: "Where a person steps in, and how changes are asked for.", qs: [
+    { id: "q38", t: "How hands-on should you be?", type: "single", opts: ["Fully automatic", "Approve at a few checkpoints", "Step through every stage"] },
+    { id: "q39", t: "Which checkpoints would you approve?", type: "multi", opts: ["A quick concept or blockout", "The finished geometry", "Materials and lighting", "An animation preview", "The final render"] },
+    { id: "q40", t: "How should you ask for a change?", type: "multi", opts: ["Type it in plain words", "Mark up a frame", "Sliders and options", "Point at a reference image"] },
+    { id: "q41", t: "Keep every version?", type: "single", opts: ["Yes, every version, to go back to", "Only approved checkpoints", "Only the final"] },
+    { id: "q42", t: "How long is acceptable from idea to first preview, and to the final video?", type: "text" }
+  ]},
+  { title: "Tools and the engine underneath", lead: "What it might be built on. Fusion 360 is not part of it.", qs: [
+    { id: "q43", t: "Which tools do you use or like?", type: "multi", opts: ["Blender", "Cinema 4D", "Fusion 360 or Onshape", "FreeCAD", "Code CAD: OpenSCAD, CadQuery, build123d", "three.js or other web 3D", "Unreal or Unity", "Spline", "AI image-to-3D: Meshy, Tripo, Rodin, TRELLIS, Hunyuan3D"] },
+    { id: "q44", t: "Preferred engine approach?", type: "single", opts: ["Blender as the core engine", "A code CAD kernel for mechanical parts, Blender to render", "Web real-time (three.js) end to end", "No preference: recommend one"] },
+    { id: "q45", t: "What should the AI actually do?", type: "multi", opts: ["Write the modeling and animation scripts", "Generate meshes from images", "Plan and direct while tools do the work", "Check results and fix problems"] },
+    { id: "q46", t: "Monthly budget for paid services and compute?", type: "single", opts: ["Free and open-source only", "Under $50", "$50 to $300", "More, if it pays for itself"] },
+    { id: "q47", t: "Any tool or AI model that impressed or disappointed you? Why?", type: "text" }
+  ]},
+  { title: "The quality bar", lead: "How we'll know it works, every time.", qs: [
+    { id: "q48", t: "What makes a result \"strong\"?", type: "multi", opts: ["Clean geometry, no glitches or holes", "Correct proportions", "Believable materials", "Smooth, purposeful motion", "Mechanically correct", "Fast to produce"] },
+    { id: "q49", t: "What would make you reject a result on sight?", type: "text" },
+    { id: "q50", t: "What should we test it against?", type: "single", opts: ["5 to 10 real jobs I'll provide", "Examples Mech picks", "We build the test set as we go"] },
+    { id: "q51", t: "Three months from now, what does success look like?", type: "text" }
+  ]},
+  { title: "Scope and ownership", lead: "The business side.", qs: [
+    { id: "q52", t: "Internal tool, product to sell, or both?", type: "single", opts: ["Internal, for our own work", "A product to sell", "Both: internal first, then sell"] },
+    { id: "q53", t: "Timeline?", type: "single", opts: ["A working prototype within weeks", "A few months", "No rush, get it right"] },
+    { id: "q54", t: "What matters about files and rights?", type: "multi", opts: ["Client files stay private", "Commercial rights to AI-generated models", "Licenses of the tools and models used", "Who owns the templates"] },
+    { id: "q55", t: "Anything else Ilan and I should know?", type: "text" }
+  ]}
+];
+
+const DRAFT_KEY = "paul-3d-vision-draft";
+let answers = {}, updatedAt = null, finished = false;
+
+function loadDraft() { try { const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); if (d && d.answers) { answers = d.answers; updatedAt = d.updatedAt || null; finished = !!d.finished; return true; } } catch (e) {} return false; }
+function saveDraft() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ answers, updatedAt, finished })); return true; } catch (e) { return false; } }
+
+const total = SECTIONS.reduce((n, s) => n + s.qs.length, 0);
+function answered(q) { const a = answers[q.id]; if (!a) return false; if (Array.isArray(a.choice) ? a.choice.length : a.choice) return true; return !!(a.text && a.text.trim()); }
+function render() {
+  const root = document.getElementById("sheets");
+  root.innerHTML = "";
+  let n = 0;
+  SECTIONS.forEach((s, si) => {
+    const sec = document.createElement("section");
+    sec.className = "sheet"; sec.id = "sheet-" + (si + 1);
+    const head = document.createElement("div"); head.className = "sheet-head";
+    head.innerHTML = '<span class="mono"></span><h2></h2><p class="note"></p>';
+    head.children[0].textContent = "Sheet " + String(si + 1).padStart(2, "0") + " of " + SECTIONS.length;
+    head.children[1].textContent = s.title;
+    head.children[2].textContent = s.lead;
+    sec.appendChild(head);
+    s.qs.forEach(q => {
+      n++;
+      const a = answers[q.id] || {};
+      const box = document.createElement("div"); box.className = "q";
+      const label = document.createElement("div"); label.className = "q-label";
+      label.innerHTML = '<span class="q-num"></span><span class="q-text"></span>';
+      label.children[0].textContent = "Q" + String(n).padStart(2, "0");
+      label.children[1].textContent = q.t;
+      const labelId = "label-" + q.id; label.children[1].id = labelId;
+      box.appendChild(label);
+      if (q.hint) { const h = document.createElement("p"); h.className = "q-hint"; h.textContent = q.hint; box.appendChild(h); }
+      if (q.type === "text") {
+        const f = document.createElement("div"); f.className = "field";
+        const ta = document.createElement("textarea"); ta.id = q.id + "-text"; ta.rows = 3; ta.maxLength = 3000; ta.value = a.text || ""; ta.setAttribute("aria-labelledby", labelId);
+        ta.addEventListener("input", () => setText(q.id, ta.value));
+        f.appendChild(ta); box.appendChild(f);
+      } else {
+        const opts = document.createElement("div"); opts.className = "opts"; opts.setAttribute("role", q.type === "single" ? "radiogroup" : "group"); opts.setAttribute("aria-labelledby", labelId);
+        q.opts.forEach((o, oi) => {
+          const lab = document.createElement("label"); lab.className = "opt";
+          const inp = document.createElement("input"); inp.type = q.type === "single" ? "radio" : "checkbox"; inp.name = q.id; inp.value = o; inp.id = q.id + "-o" + oi;
+          inp.checked = q.type === "single" ? a.choice === o : Array.isArray(a.choice) && a.choice.includes(o);
+          inp.addEventListener("change", () => setChoice(q, o, inp.checked));
+          const sp = document.createElement("span"); sp.textContent = o;
+          lab.append(inp, sp); opts.appendChild(lab);
+        });
+        box.appendChild(opts);
+        const f = document.createElement("div"); f.className = "field";
+        const ol = document.createElement("label"); ol.className = "other-label"; ol.htmlFor = q.id + "-text"; ol.textContent = "Other, or in your own words (optional)";
+        const ta = document.createElement("textarea"); ta.id = q.id + "-text"; ta.rows = 2; ta.maxLength = 3000; ta.value = a.text || "";
+        ta.addEventListener("input", () => setText(q.id, ta.value));
+        f.append(ol, ta); box.appendChild(f);
+      }
+      sec.appendChild(box);
+    });
+    root.appendChild(sec);
+  });
+  document.getElementById("sheet-count").textContent = String(SECTIONS.length + 1);
+  progress();
+}
+
+function setChoice(q, o, on) {
+  const a = answers[q.id] || (answers[q.id] = {});
+  if (q.type === "single") a.choice = on ? o : a.choice;
+  else { const s = new Set(Array.isArray(a.choice) ? a.choice : []); on ? s.add(o) : s.delete(o); a.choice = [...s]; }
+  changed();
+}
+function setText(id, v) { const a = answers[id] || (answers[id] = {}); a.text = v; changed(); }
+function changed() { updatedAt = new Date().toISOString(); localOk = saveDraft(); progress(); schedule(); }
+
+// Answers go to Ilan's answer store through one function, save_brief(), which can only add or replace
+// this browser's own copy. The key below is a publishable one: it is meant to sit in a public page.
+const STORE_URL = "https://cctblxmkdhfuvisfxnfm.supabase.co/rest/v1/rpc/save_brief";
+const STORE_KEY = "sb_publishable_OdWGOrHWSL9Zgdc_Svg4jQ_m0gkQYsT";
+const TOKEN_KEY = "paul-3d-vision-token";
+let localOk = true, timer = null, sending = false, again = false, retry = null;
+function newToken() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  const b = new Uint8Array(16); crypto.getRandomValues(b); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+  const h = [...b].map(x => x.toString(16).padStart(2, "0")).join("");
+  return h.slice(0, 8) + "-" + h.slice(8, 12) + "-" + h.slice(12, 16) + "-" + h.slice(16, 20) + "-" + h.slice(20);
+}
+let token = null;
+try { token = localStorage.getItem(TOKEN_KEY); if (!token) { token = newToken(); localStorage.setItem(TOKEN_KEY, token); } } catch (e) { token = token || newToken(); }
+function payload() {
+  return { brief: "3D engine vision brief", respondent: "Paul", savedAt: updatedAt, finished, sheets: SECTIONS.length, questions: total,
+    answers: SECTIONS.flatMap((s, si) => s.qs.map(q => ({ id: q.id, sheet: si + 1, section: s.title, question: q.t, picked: (answers[q.id] || {}).choice ?? null, words: ((answers[q.id] || {}).text || "").trim() }))),
+    text: asMarkdown() };
+}
+function schedule() { clearTimeout(timer); clearTimeout(retry); stateText("Saving…", ""); timer = setTimeout(send, 1200); }
+async function send() {
+  if (sending) { again = true; return false; }
+  sending = true; let ok = false;
+  try {
+    const r = await fetch(STORE_URL, { method: "POST", headers: { "Content-Type": "application/json", apikey: STORE_KEY },
+      body: JSON.stringify({ p_token: token, p_brief: "paul-3d-engine", p_answers: payload(), p_finished: finished }) });
+    ok = r.ok;
+  } catch (e) { ok = false; }
+  sending = false;
+  if (ok) stateText("Saved for Ilan at " + timeNow(), "ok");
+  else {
+    stateText(localOk ? "Not saved online just now; kept in this browser. Trying again shortly" : "Not saved online just now. Use Download a copy before closing", "warn");
+    clearTimeout(retry); retry = setTimeout(send, 20000);
+  }
+  if (again) { again = false; return send(); }
+  return ok;
+}
+
+function progress() {
+  const done = SECTIONS.reduce((n, s) => n + s.qs.filter(answered).length, 0);
+  document.getElementById("progress-text").textContent = done + " of " + total + " answered";
+  document.getElementById("bar").style.width = (100 * done / total) + "%";
+}
+
+function stateText(text, cls) { const el = document.getElementById("save-state"); el.textContent = text; el.className = "save-state" + (cls ? " " + cls : ""); }
+function timeNow() { return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+function asMarkdown() {
+  const out = ["# 3D engine vision brief, Paul's answers", "", "Updated: " + (updatedAt || "not yet") + (finished ? " (marked finished)" : ""), ""];
+  let n = 0;
+  SECTIONS.forEach((s, si) => {
+    out.push("## Sheet " + (si + 1) + ": " + s.title, "");
+    s.qs.forEach(q => {
+      n++; const a = answers[q.id] || {};
+      out.push("**Q" + String(n).padStart(2, "0") + ". " + q.t + "**");
+      const c = Array.isArray(a.choice) ? a.choice.join("; ") : (a.choice || "");
+      if (c) out.push("- Picked: " + c);
+      if (a.text && a.text.trim()) out.push("- In his words: " + a.text.trim());
+      if (!c && !(a.text && a.text.trim())) out.push("- (no answer)");
+      out.push("");
+    });
+  });
+  return out.join("\n");
+}
+
+function fileName(ext) { const d = new Date(); const p = n => String(n).padStart(2, "0"); return "paul-3d-engine-answers-" + d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "." + ext; }
+
+document.getElementById("btn-copy").addEventListener("click", async () => {
+  const text = asMarkdown(); const box = document.getElementById("copybox"); const st = document.getElementById("finish-status");
+  try { await navigator.clipboard.writeText(text); st.textContent = "Copied. Paste it into a message to Ilan."; }
+  catch (e) { box.hidden = false; box.value = text; box.focus(); box.select(); st.textContent = "Select all of the text below and copy it."; }
+});
+
+document.getElementById("btn-finish").addEventListener("click", async () => {
+  const st = document.getElementById("finish-status");
+  finished = true; updatedAt = new Date().toISOString(); saveDraft(); clearTimeout(timer);
+  st.textContent = "Sending…";
+  st.textContent = (await send()) ? "Thank you, Paul. Your answers are with Ilan, and I'll take it from here." : "They did not go through just now. Press Download a copy and send the file to Ilan.";
+});
+
+document.getElementById("btn-download").addEventListener("click", () => {
+  updatedAt = updatedAt || new Date().toISOString(); saveDraft();
+  const blob = new Blob([JSON.stringify(payload(), null, 2)], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = fileName("json");
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  document.getElementById("finish-status").textContent = "Saved as " + a.download + " in your Downloads.";
+});
+
+document.getElementById("file-load").addEventListener("change", async (ev) => {
+  const f = ev.target.files && ev.target.files[0]; const st = document.getElementById("finish-status"); if (!f) return;
+  try {
+    const d = JSON.parse(await f.text()); if (!d || !Array.isArray(d.answers)) throw new Error("not a saved answers file");
+    answers = {}; d.answers.forEach(x => { answers[x.id] = { choice: x.picked ?? undefined, text: x.words || "" }; });
+    updatedAt = d.savedAt || new Date().toISOString(); saveDraft(); render(); schedule(); st.textContent = "Loaded your answers from " + f.name + ".";
+  } catch (e) { st.textContent = "That file isn't a saved answers file from this brief."; }
+  ev.target.value = "";
+});
+
+if (loadDraft()) stateText("Your earlier answers are back", "ok");
+else if (!saveDraft()) { localOk = false; }
+render();
+</script>
+</body>
+</html>
